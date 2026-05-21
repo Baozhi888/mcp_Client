@@ -1,0 +1,6 @@
+# VPS MCP Server Management Dependencies
+psutil>=5.9.0
+paramiko>=3.0.0
+python-dotenv>=1.0.0
+pytz>=2024.1
+mcp>=1.0.0

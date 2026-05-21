@@ -1,0 +1,235 @@
+# Compose v2 不需要 version 字段
+
+services:
+  # Redis服务 - MCP服务间通信
+  redis:
+    image: redis:7-alpine
+    container_name: mcp-redis
+    restart: unless-stopped
+    # 不对外暴露端口，避免公网访问；服务通过内部网络访问 redis:6379
+    command: redis-server --appendonly yes --requirepass ${MCP_REDIS_PASSWORD:-change_this_to_a_strong_password}
+    volumes:
+      - redis_data:/data
+    mem_limit: 64m
+    memswap_limit: 128m
+    pids_limit: 50
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - mcp_network
+    healthcheck:
+      test: ["CMD", "sh", "-lc", "redis-cli -a ${MCP_REDIS_PASSWORD:-change_this_to_a_strong_password} ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  # 统一管道服务（使用 mcp_pipe.py 托管多个 MCP 脚本）
+  mcp-pipe:
+    build:
+      context: .
+      dockerfile: mcp-pipe/Dockerfile
+    container_name: mcp-pipe
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      MCP_ENDPOINT: ${MCP_ENDPOINT}
+      # Redis 内网访问
+      MCP_REDIS_HOST: redis
+      MCP_REDIS_PORT: 6379
+      MCP_REDIS_DB: 1
+      MCP_REDIS_PASSWORD: ${MCP_REDIS_PASSWORD}
+      # 代理
+      HTTP_PROXY: ${HTTP_PROXY:-}
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+      # 通用日志
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # 传递给子进程（notepad/websearch/market等）所需的键
+      ENABLE_REDIS_LISTENER: ${ENABLE_REDIS_LISTENER:-true}
+      # Notepad 配置
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE}
+      ALLOWED_FILE_TYPES: ${ALLOWED_FILE_TYPES}
+      API_SECRET_KEY: ${API_SECRET_KEY}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      DB_POOL_SIZE: ${DB_POOL_SIZE}
+      REQUEST_TIMEOUT: ${REQUEST_TIMEOUT}
+      CACHE_EXPIRE_TIME: ${CACHE_EXPIRE_TIME}
+      DEBUG_MODE: ${DEBUG_MODE}
+      TEST_MODE: ${TEST_MODE}
+      VERBOSE_LOGGING: ${VERBOSE_LOGGING}
+      CUSTOM_DOMAIN: ${CUSTOM_DOMAIN}
+      GMAIL_API_CREDENTIALS_FILE: ${GMAIL_API_CREDENTIALS_FILE}
+      TOKEN_PATH: ${TOKEN_PATH}
+      AUTHORIZATION_CODE: ${AUTHORIZATION_CODE}
+      SERVER_MODE: ${SERVER_MODE}
+      MAX_EMAILS_TO_FETCH: ${MAX_EMAILS_TO_FETCH}
+      RECONNECT_TIMEOUT: ${RECONNECT_TIMEOUT}
+      GMAIL_SENDER_NAME: ${GMAIL_SENDER_NAME}
+      GMAIL_SENDER_EMAIL: ${GMAIL_SENDER_EMAIL:-}
+      GMAIL_DUPLICATE_WINDOW_SECONDS: ${GMAIL_DUPLICATE_WINDOW_SECONDS:-120}
+      REMINDER_CHECK_INTERVAL: ${REMINDER_CHECK_INTERVAL:-60}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
+      CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID}
+      KV_NAMESPACE_ID: ${KV_NAMESPACE_ID}
+      D1_DATABASE_ID: ${D1_DATABASE_ID}
+      # Websearch/Market API keys
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      GOOGLE_CX: ${GOOGLE_CX}
+      BING_API_KEY: ${BING_API_KEY}
+      TAVILY_API_KEY: ${TAVILY_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      NEWS_API_KEY: ${NEWS_API_KEY}
+      ZHIPU_API_KEY: ${ZHIPU_API_KEY}
+      # 性能调优
+      WEBSEARCH_MAX_MEMORY: ${WEBSEARCH_MAX_MEMORY}
+      WEBSEARCH_TIMEOUT: ${WEBSEARCH_TIMEOUT}
+      WEBSEARCH_CACHE_TTL: ${WEBSEARCH_CACHE_TTL}
+      # MCP Pipe 超时配置
+      MCP_WS_OPEN_TIMEOUT: ${MCP_WS_OPEN_TIMEOUT:-60}
+      MCP_WS_PING_INTERVAL: ${MCP_WS_PING_INTERVAL:-30}
+      MCP_WS_PING_TIMEOUT: ${MCP_WS_PING_TIMEOUT:-180}
+      MCP_HEAVY_SERVICES: ${MCP_HEAVY_SERVICES:-aktools}
+      MCP_HEAVY_SERVICE_DELAY: ${MCP_HEAVY_SERVICE_DELAY:-5}
+      MCP_INSTALL_DEPS_ON_START: ${MCP_INSTALL_DEPS_ON_START:-false}
+      # AKTools 行情查询超时
+      AKTOOLS_REQUEST_TIMEOUT: ${AKTOOLS_REQUEST_TIMEOUT:-60}
+      # 要托管的 MCP 脚本列表（以空格分隔）
+      MCP_SCRIPTS: ${MCP_SCRIPTS}
+      WEBSEARCH_CACHE_MAX_MB: ${WEBSEARCH_CACHE_MAX_MB:-32}
+      WEBSEARCH_MAX_CONTENT_MB: ${WEBSEARCH_MAX_CONTENT_MB:-5}
+      WEBSEARCH_TOTAL_TIMEOUT_S: ${WEBSEARCH_TOTAL_TIMEOUT_S:-20}
+      MALLOC_ARENA_MAX: ${MALLOC_ARENA_MAX:-2}
+    volumes:
+      - .:/app
+    command: ["bash", "-lc", "/app/scripts/start_mcp_pipe.sh"]
+    mem_limit: 512m
+    memswap_limit: 768m
+    pids_limit: 80
+    cpus: 1.25
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - mcp_network
+    profiles: ["mcp-pipe"]
+
+  # 记事本MCP服务
+  notepad-mcp:
+    build:
+      context: ./notepad_mcp
+      dockerfile: Dockerfile
+    container_name: mcp-notepad
+    profiles: ["standalone"]
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      # Redis
+      MCP_REDIS_HOST: redis
+      MCP_REDIS_PORT: 6379
+      MCP_REDIS_DB: 1
+      MCP_REDIS_PASSWORD: ${MCP_REDIS_PASSWORD:-change_this_to_a_strong_password}
+      ENABLE_REDIS_LISTENER: ${ENABLE_REDIS_LISTENER:-true}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+      # Proxies (optional)
+      HTTP_PROXY: ${HTTP_PROXY:-}
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+
+      # Notepad-specific configs
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE}
+      ALLOWED_FILE_TYPES: ${ALLOWED_FILE_TYPES}
+      API_SECRET_KEY: ${API_SECRET_KEY}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      DB_POOL_SIZE: ${DB_POOL_SIZE}
+      REQUEST_TIMEOUT: ${REQUEST_TIMEOUT}
+      CACHE_EXPIRE_TIME: ${CACHE_EXPIRE_TIME}
+      DEBUG_MODE: ${DEBUG_MODE}
+      TEST_MODE: ${TEST_MODE}
+      VERBOSE_LOGGING: ${VERBOSE_LOGGING}
+      CUSTOM_DOMAIN: ${CUSTOM_DOMAIN}
+
+      # Gmail/Server mode
+      GMAIL_API_CREDENTIALS_FILE: ${GMAIL_API_CREDENTIALS_FILE}
+      TOKEN_PATH: ${TOKEN_PATH}
+      AUTHORIZATION_CODE: ${AUTHORIZATION_CODE}
+      SERVER_MODE: ${SERVER_MODE}
+      MAX_EMAILS_TO_FETCH: ${MAX_EMAILS_TO_FETCH}
+      RECONNECT_TIMEOUT: ${RECONNECT_TIMEOUT}
+      GMAIL_SENDER_NAME: ${GMAIL_SENDER_NAME}
+      GMAIL_SENDER_EMAIL: ${GMAIL_SENDER_EMAIL:-}
+      GMAIL_DUPLICATE_WINDOW_SECONDS: ${GMAIL_DUPLICATE_WINDOW_SECONDS:-120}
+      REMINDER_CHECK_INTERVAL: ${REMINDER_CHECK_INTERVAL:-60}
+
+      # Cloudflare backends
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
+      CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID}
+      KV_NAMESPACE_ID: ${KV_NAMESPACE_ID}
+      D1_DATABASE_ID: ${D1_DATABASE_ID}
+    volumes:
+      - notepad_data:/app/data
+    networks:
+      - mcp_network
+
+  # 搜索MCP服务
+  websearch-mcp:
+    build:
+      context: ./xiaozhi-websearch
+      dockerfile: Dockerfile
+    container_name: mcp-websearch
+    profiles: ["standalone"]
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      # Redis
+      MCP_REDIS_HOST: redis
+      MCP_REDIS_PORT: 6379
+      MCP_REDIS_DB: 1
+      MCP_REDIS_PASSWORD: ${MCP_REDIS_PASSWORD:-change_this_to_a_strong_password}
+      ENABLE_REDIS_LISTENER: ${ENABLE_REDIS_LISTENER:-true}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+      # Proxies (optional)
+      HTTP_PROXY: ${HTTP_PROXY:-}
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+
+      # API keys and search engines
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      GOOGLE_CX: ${GOOGLE_CX}
+      BING_API_KEY: ${BING_API_KEY}
+      TAVILY_API_KEY: ${TAVILY_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      NEWS_API_KEY: ${NEWS_API_KEY}
+      ZHIPU_API_KEY: ${ZHIPU_API_KEY}
+
+      # Tuning
+      WEBSEARCH_MAX_MEMORY: ${WEBSEARCH_MAX_MEMORY}
+      WEBSEARCH_TIMEOUT: ${WEBSEARCH_TIMEOUT}
+      WEBSEARCH_CACHE_TTL: ${WEBSEARCH_CACHE_TTL}
+    volumes:
+      - websearch_cache:/app/cache
+    # 启动后在 websearch 容器里做一次自检（可选）
+    #command: ["sh", "-lc", "python websearch_optimized.py & sleep 3 && /app/scripts/selfcheck.sh || true"]
+    networks:
+      - mcp_network
+
+volumes:
+  redis_data:
+    driver: local
+  notepad_data:
+    driver: local
+  websearch_cache:
+    driver: local
+
+networks:
+  mcp_network:
+    driver: bridge

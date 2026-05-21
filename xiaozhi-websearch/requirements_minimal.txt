@@ -1,0 +1,15 @@
+# Essential packages for websearch functionality
+fastmcp==2.7.0
+mcp==1.9.3
+requests==2.32.3
+beautifulsoup4==4.13.4
+zhipuai==2.1.5.20250526
+
+# Core dependencies
+pydantic==2.11.4
+httpx==0.28.1
+anyio==4.9.0
+
+# Additional dependencies for mcp_pipe.py
+websockets==15.0.1
+python-dotenv==1.1.0

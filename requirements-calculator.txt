@@ -1,0 +1,4 @@
+# Minimal deps for calculator MCP
+mcp>=1.8.1
+fastmcp>=0.1.0
+

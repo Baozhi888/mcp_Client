@@ -1,0 +1,50 @@
+.venv/
+myenv/
+.myenv/
+test/
+tests/
+venv/
+__pycache__/
+node_modules/
+.claude/
+.kiro/
+.backup/
+
+# Python
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+*.db
+*.egg-info/
+
+# 环境与配置
+.env
+.DS_Store
+.vscode/
+.idea/
+
+# 日志与临时文件
+
+*.log
+*.tmp
+*.bak
+*.swp
+tmp/
+temp/
+
+# 测试与覆盖率
+coverage/
+.pytest_cache/
+.mypy_cache/
+
+# 构建产物
+output/
+dist/
+build/
+test/
+
+# google邮箱
+.google_key/
+gmail_credentials.json
+token.json

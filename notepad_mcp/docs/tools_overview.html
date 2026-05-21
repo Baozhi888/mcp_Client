@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Notepad MCP 工具一览 | Tools Overview</title>
+  <style>
+    :root { --fg:#222; --muted:#666; --bg:#fff; --accent:#3b82f6; --chip:#eef2ff; }
+    body { font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,'Noto Sans','Microsoft YaHei','PingFang SC',sans-serif; color:var(--fg); background:var(--bg); margin:0; }
+    header { padding:24px 16px; border-bottom:1px solid #eee; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 0 16px 40px; }
+    h1 { margin: 0 0 6px; font-size: 22px; }
+    .subtitle { color: var(--muted); font-size: 14px; }
+    nav.toc { margin: 20px 0 28px; display:flex; flex-wrap:wrap; gap:8px; }
+    nav.toc a { padding:6px 10px; border-radius:8px; background:var(--chip); color:#444; text-decoration:none; font-size:12px; }
+    section.tool { border:1px solid #eee; border-radius:12px; padding:16px; margin:14px 0; }
+    .tool h2 { margin:0 0 10px; font-size:18px; }
+    .kvs { display:grid; grid-template-columns: 140px 1fr; gap:6px 14px; font-size:13px; }
+    .kvs div.key { color:var(--muted); }
+    .chips { display:flex; flex-wrap:wrap; gap:6px; }
+    .chip { font-size:12px; background:#f7f7f7; padding:4px 8px; border-radius:999px; border:1px solid #eee; }
+    footer { color: var(--muted); font-size: 12px; padding: 24px 16px; text-align:center; border-top:1px solid #eee; }
+    code { background:#fafafa; border:1px solid #eee; padding:1px 4px; border-radius:4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Notepad MCP 工具一览 · Tools Overview</h1>
+      <div class="subtitle">简短清晰，面向 LLM（Purpose / When / Required / Optional / Returns / Notes） · 路由工具含 Supported actions</div>
+    </div>
+  </header>
+  <main class="container">
+    <nav class="toc">
+      <a href="#notepad_manager">notepad_manager</a>
+      <a href="#content_manager">content_manager</a>
+      <a href="#email_manager">email_manager</a>
+      <a href="#create_note">create_note</a>
+      <a href="#get_note">get_note</a>
+      <a href="#update_note">update_note</a>
+      <a href="#update_note_and_email">update_note_and_email</a>
+      <a href="#delete_note">delete_note</a>
+      <a href="#search_notes">search_notes</a>
+      <a href="#send_note_as_email_attachment">send_note_as_email_attachment</a>
+      <a href="#send_note_as_html_email">send_note_as_html_email</a>
+      <a href="#send_email_simple">send_email_simple</a>
+      <a href="#get_recent_emails">get_recent_emails</a>
+      <a href="#gmail_health_check">gmail_health_check</a>
+      <a href="#get_system_status">get_system_status</a>
+      <a href="#save_search_results_to_notepad">save_search_results_to_notepad</a>
+      <a href="#batch_note_operations">batch_note_operations</a>
+      <a href="#tag_manager">tag_manager</a>
+      <a href="#smart_tag_suggestions">smart_tag_suggestions</a>
+      <a href="#zhipu_recognize_image">zhipu_recognize_image</a>
+      <a href="#zhipu_check_service_health">zhipu_check_service_health</a>
+      <a href="#process_email_image_attachments">process_email_image_attachments</a>
+      <a href="#send_file_as_email_attachment">send_file_as_email_attachment</a>
+      <a href="#notepad_initialize_components">notepad_initialize_components</a>
+    </nav>
+
+    <!-- Route tools -->
+    <section class="tool" id="notepad_manager">
+      <h2>notepad_manager</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>Notebook route: create/read/update/search/tags</div>
+        <div class="key">When</div><div>Single entry for multiple note ops (prefer single tools when possible)</div>
+        <div class="key">Supported actions</div><div class="chips">
+          <span class="chip">create</span><span class="chip">get</span><span class="chip">update</span><span class="chip">delete</span>
+          <span class="chip">search</span><span class="chip">filter</span><span class="chip">quick_note</span>
+          <span class="chip">add_tag</span><span class="chip">remove_tag</span><span class="chip">get_tags</span>
+          <span class="chip">statistics</span><span class="chip">create_from_text</span>
+        </div>
+        <div class="key">Required</div><div><code>action</code></div>
+        <div class="key">Optional</div><div>note_id, title, content, category, priority, tags(List[str]), query, start_date, end_date, auto_categorize, auto_title</div>
+        <div class="key">Returns</div><div>{"success": bool, ...}</div>
+        <div class="key">Notes</div><div>tags 为 List[str]；ID 查找支持回退匹配</div>
+      </div>
+    </section>
+
+    <section class="tool" id="content_manager">
+      <h2>content_manager</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>File & Reminder route</div>
+        <div class="key">When</div><div>Manage files/reminders/system via one entry</div>
+        <div class="key">Supported actions</div><div class="chips">
+          <span class="chip">upload_file</span><span class="chip">get_file</span><span class="chip">delete_file</span>
+          <span class="chip">create_reminder</span><span class="chip">get_reminder</span><span class="chip">delete_reminder</span>
+          <span class="chip">backup_data</span><span class="chip">get_system_status</span>
+        </div>
+        <div class="key">Required</div><div><code>action</code></div>
+        <div class="key">Optional</div><div>file_id, reminder_id, name, content, file_type, size, content_type, title, remind_at, reminder_type, priority, notify_methods(str), email_to, query, start_date, end_date</div>
+        <div class="key">Returns</div><div>{"success": bool, ...}</div>
+        <div class="key">Notes</div><div>notify_methods 为逗号分隔字符串（例：email,sms）</div>
+      </div>
+    </section>
+
+    <section class="tool" id="email_manager">
+      <h2>email_manager</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>Email route (Gmail base + note/file integration)</div>
+        <div class="key">When</div><div>Send/list/read/trash emails; email notes/files via one entry</div>
+        <div class="key">Supported actions</div><div class="chips">
+          <span class="chip">send_email</span><span class="chip">list_emails</span><span class="chip">get_email</span><span class="chip">trash_email</span>
+          <span class="chip">mark_read</span><span class="chip">mark_unread</span><span class="chip">batch_trash</span>
+          <span class="chip">send_note_email</span><span class="chip">send_note_body</span><span class="chip">send_reminder_email</span>
+          <span class="chip">send_notes_summary</span><span class="chip">create_note_and_email</span>
+          <span class="chip">download_email_attachments</span><span class="chip">send_email_with_file_attachment</span><span class="chip">send_file_email</span>
+        </div>
+        <div class="key">Required</div><div><code>action</code></div>
+        <div class="key">Optional</div><div>to, subject, body, cc, note_id, file_id, reminder_id, email_id, email_ids(List[str]), mailbox, max_results, query, email_type("body"|"attachment"), date_range, category, title, content</div>
+        <div class="key">Returns</div><div>{"success": bool, ...}</div>
+        <div class="key">Notes</div><div>自动 ensure_gmail_service；笔记 ID 支持回退匹配；常见办公/文本附件支持</div>
+      </div>
+    </section>
+
+    <!-- Single-purpose tools (compact) -->
+    <section class="tool" id="create_note">
+      <h2>create_note</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>Create a new note</div>
+        <div class="key">When</div><div>New content to store</div>
+        <div class="key">Required</div><div>title, content</div>
+        <div class="key">Optional</div><div>category, priority, tags(List[str])</div>
+        <div class="key">Returns</div><div>{"success": bool, "data": note}</div>
+        <div class="key">Notes</div><div>Long content may be auto-segmented</div>
+      </div>
+    </section>
+
+    <section class="tool" id="get_note">
+      <h2>get_note</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>Get note by ID (fallback matching)</div>
+        <div class="key">Required</div><div>note_id</div>
+        <div class="key">Returns</div><div>{"success": bool, "data": note}</div>
+      </div>
+    </section>
+
+    <section class="tool" id="update_note">
+      <h2>update_note</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>Partially update fields</div>
+        <div class="key">Required</div><div>note_id</div>
+        <div class="key">Optional</div><div>title, content, category, priority, tags(List[str]), enable_auto_segment_on_update(False)</div>
+        <div class="key">Returns</div><div>{"success": bool, "data": updated_note}</div>
+      </div>
+    </section>
+
+    <section class="tool" id="update_note_and_email">
+      <h2>update_note_and_email</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>Atomic update + email (body or attachment)</div>
+        <div class="key">When</div><div>“更新并发送”一条龙（更稳定）</div>
+        <div class="key">Required</div><div>note_id</div>
+        <div class="key">Optional</div><div>title, content, category, priority, tags(List[str]), to, subject, send_type("attachment"|"body"), cc</div>
+        <div class="key">Returns</div><div>{"success": bool, "note": note, "email_result": {...}}</div>
+        <div class="key">Notes</div><div>Ensures Gmail；ID fallback</div>
+      </div>
+    </section>
+
+    <section class="tool" id="delete_note">
+      <h2>delete_note</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>Delete a note permanently</div>
+        <div class="key">Required</div><div>note_id</div>
+        <div class="key">Returns</div><div>{"success": bool, "message": str}</div>
+      </div>
+    </section>
+
+    <section class="tool" id="search_notes">
+      <h2>search_notes</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>Search by keyword/category/priority/tags</div>
+        <div class="key">Required</div><div>query</div>
+        <div class="key">Optional</div><div>category, priority, tags(List[str])</div>
+        <div class="key">Returns</div><div>{"success": bool, "data": [...], "count": n}</div>
+      </div>
+    </section>
+
+    <section class="tool" id="send_note_as_email_attachment">
+      <h2>send_note_as_email_attachment</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>Send a note as text attachment</div>
+        <div class="key">Required</div><div>note_id, to</div>
+        <div class="key">Optional</div><div>subject, body, cc</div>
+        <div class="key">Returns</div><div>{"success": bool, ...}</div>
+      </div>
+    </section>
+
+    <section class="tool" id="send_note_as_html_email">
+      <h2>send_note_as_html_email</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>Send note as rich HTML email</div>
+        <div class="key">Required</div><div>note_id, to</div>
+        <div class="key">Optional</div><div>subject, cc, include_summary</div>
+        <div class="key">Returns</div><div>{"success": bool, ...}</div>
+      </div>
+    </section>
+
+    <section class="tool" id="send_email_simple">
+      <h2>send_email_simple</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>Send plain text email</div>
+        <div class="key">Required</div><div>to, subject, body</div>
+        <div class="key">Optional</div><div>cc</div>
+        <div class="key">Returns</div><div>{"success": bool, ...}</div>
+      </div>
+    </section>
+
+    <section class="tool" id="get_recent_emails">
+      <h2>get_recent_emails</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>List recent emails</div>
+        <div class="key">Optional</div><div>max_results, label, query</div>
+        <div class="key">Returns</div><div>{"success": bool, "data": [emails]}</div>
+      </div>
+    </section>
+
+    <section class="tool" id="gmail_health_check">
+      <h2>gmail_health_check</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>Gmail integration health check</div>
+        <div class="key">Returns</div><div>{"success": bool, ...}</div>
+      </div>
+    </section>
+
+    <section class="tool" id="get_system_status">
+      <h2>get_system_status</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>System/service status (DB/KV/Gmail)</div>
+        <div class="key">Returns</div><div>{"success": bool, ...}</div>
+      </div>
+    </section>
+
+    <section class="tool" id="save_search_results_to_notepad">
+      <h2>save_search_results_to_notepad</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>Save search/aggregation result to note (optional email)</div>
+        <div class="key">Required</div><div>title, content</div>
+        <div class="key">Optional</div><div>category, tags(comma string), send_email</div>
+        <div class="key">Returns</div><div>{"success": bool, ...}</div>
+      </div>
+    </section>
+
+    <section class="tool" id="batch_note_operations">
+      <h2>batch_note_operations</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>Batch note ops (delete/update/export/email)</div>
+        <div class="key">Required</div><div>operation("delete"|"update"|"export"|"email"), note_ids(List[str])</div>
+        <div class="key">Optional</div><div>update_data, email_to</div>
+        <div class="key">Returns</div><div>{"success": bool, "data": {...}}</div>
+      </div>
+    </section>
+
+    <section class="tool" id="tag_manager">
+      <h2>tag_manager</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>Enhanced tag management</div>
+        <div class="key">Supported actions</div><div class="chips">
+          <span class="chip">add_tags</span><span class="chip">remove_tags</span><span class="chip">get_note_tags</span>
+          <span class="chip">get_all_tags</span><span class="chip">search_tags</span><span class="chip">get_tag_stats</span>
+          <span class="chip">rename_tag</span><span class="chip">merge_tags</span>
+        </div>
+        <div class="key">Required</div><div>action</div>
+        <div class="key">Optional</div><div>note_id, tag_name, tags(List[str]), search_query, limit</div>
+        <div class="key">Returns</div><div>{"success": bool, ...}</div>
+      </div>
+    </section>
+
+    <section class="tool" id="smart_tag_suggestions">
+      <h2>smart_tag_suggestions</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>Suggest tags from content/title/context</div>
+        <div class="key">Required</div><div>content</div>
+        <div class="key">Optional</div><div>title, category, existing_tags(List[str]), max_suggestions(5)</div>
+        <div class="key">Returns</div><div>{"success": bool, "data": [tags]}</div>
+      </div>
+    </section>
+
+    <section class="tool" id="zhipu_recognize_image">
+      <h2>zhipu_recognize_image</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>Recognize image via Zhipu AI</div>
+        <div class="key">Required</div><div>image_path</div>
+        <div class="key">Optional</div><div>prompt</div>
+        <div class="key">Returns</div><div>{"success": bool, "data": {...}}</div>
+      </div>
+    </section>
+
+    <section class="tool" id="zhipu_check_service_health">
+      <h2>zhipu_check_service_health</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>Zhipu AI health check</div>
+        <div class="key">Returns</div><div>{"success": bool, "status": str}</div>
+      </div>
+    </section>
+
+    <section class="tool" id="process_email_image_attachments">
+      <h2>process_email_image_attachments</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>Process email image attachments & optionally save to notes</div>
+        <div class="key">Required</div><div>email_id</div>
+        <div class="key">Optional</div><div>save_to_notepad(True), note_title_prefix, prompt</div>
+        <div class="key">Returns</div><div>{"success": bool, "data": {...}}</div>
+      </div>
+    </section>
+
+    <section class="tool" id="send_file_as_email_attachment">
+      <h2>send_file_as_email_attachment</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>Send stored file as attachment</div>
+        <div class="key">Required</div><div>file_id, to, subject</div>
+        <div class="key">Optional</div><div>body, cc</div>
+        <div class="key">Returns</div><div>{"success": bool, ...}</div>
+      </div>
+    </section>
+
+    <section class="tool" id="notepad_initialize_components">
+      <h2>notepad_initialize_components</h2>
+      <div class="kvs">
+        <div class="key">Purpose</div><div>Initialize DB/KV/Gmail components</div>
+        <div class="key">Returns</div><div>{"success": bool, ...}</div>
+      </div>
+    </section>
+  </main>
+  <footer>
+    由 Notepad MCP 生成 · Updated at <script>document.write(new Date().toLocaleString())</script>
+  </footer>
+</body>
+</html>
+
