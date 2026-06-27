@@ -7,7 +7,7 @@
 当前建议只运行下面四个脚本：
 
 ```bash
-MCP_SCRIPTS="calculator.py notepad_mcp/notepad_mcp_fixed.py xiaozhi-websearch/websearch_optimized.py server_mcp_vps/server_mcp.py"
+MCP_SCRIPTS="calculator.py notepad_mcp/notepad_mcp_fixed.py xiaozhi-websearch/websearch_optimized.py"
 ```
 
 | 服务 | 入口 | 说明 |
@@ -15,7 +15,6 @@ MCP_SCRIPTS="calculator.py notepad_mcp/notepad_mcp_fixed.py xiaozhi-websearch/we
 | Calculator | `calculator.py` | 安全数学表达式计算 |
 | Notepad MCP | `notepad_mcp/notepad_mcp_fixed.py` | 笔记、邮件、文件、图片识别、邮件提醒 |
 | Websearch MCP | `xiaozhi-websearch/websearch_optimized.py` | 联网搜索、搜索结果保存到记事本 |
-| VPS MCP | `server_mcp_vps/server_mcp.py` | 系统、进程、服务、Docker、日志、网络、安全检查 |
 
 旧的单体/实验入口已经清理，不再使用根目录 `server_mcp_vps.py`、`mcp_pipe_improved.py`、`notepad_mcp/gmail_mcp.py`、`notepad_mcp/notepad_mcp.py` 等旧文件。
 
@@ -38,7 +37,7 @@ KV_NAMESPACE_ID=
 D1_DATABASE_ID=
 GMAIL_API_CREDENTIALS_FILE=notepad_mcp/.google_key/gmail_credentials.json
 TOKEN_PATH=notepad_mcp/.google_key/token.json
-MCP_SCRIPTS="calculator.py notepad_mcp/notepad_mcp_fixed.py xiaozhi-websearch/websearch_optimized.py server_mcp_vps/server_mcp.py"
+MCP_SCRIPTS="calculator.py notepad_mcp/notepad_mcp_fixed.py xiaozhi-websearch/websearch_optimized.py"
 ```
 
 2. 启动

@@ -34,7 +34,7 @@ pip_retry() {
 }
 
 # 默认脚本列表（可通过 MCP_SCRIPTS 覆盖），以空格分隔
-DEFAULT_SCRIPTS="calculator.py notepad_mcp/notepad_mcp_fixed.py xiaozhi-websearch/websearch_optimized.py server_mcp_vps/server_mcp.py"
+DEFAULT_SCRIPTS="calculator.py notepad_mcp/notepad_mcp_fixed.py xiaozhi-websearch/websearch_optimized.py"
 SCRIPTS=${MCP_SCRIPTS:-$DEFAULT_SCRIPTS}
 
 # 动态为每个 MCP 脚本安装其依赖：

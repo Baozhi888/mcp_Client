@@ -311,7 +311,7 @@ start_service() {
 
     # 启动所有MCP服务通过mcp_pipe.py统一管理
     # 使用环境变量MCP_SCRIPTS，如果未设置则使用默认值
-    local scripts="${MCP_SCRIPTS:-calculator.py notepad_mcp/notepad_mcp_fixed.py xiaozhi-websearch/websearch_optimized.py server_mcp_vps/server_mcp.py}"
+    local scripts="${MCP_SCRIPTS:-calculator.py notepad_mcp/notepad_mcp_fixed.py xiaozhi-websearch/websearch_optimized.py}"
     
     # 启动服务
     LOG_FILE="$LOG_DIR/mcp_service_$(date +%Y%m%d_%H%M%S).log"

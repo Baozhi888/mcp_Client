@@ -5677,15 +5677,22 @@ async def retry_unrecognized_image_notes(limit: int = 10, prompt: str = "请描�
 # Voice-friendly MCP tool surface
 # ============================================================================
 
+def _optional_tool_str(value: Any) -> Optional[str]:
+    if value is None:
+        return None
+    value = str(value).strip()
+    return value or None
+
+
 @mcp.tool(name="notepad_note_create", description="创建新笔记。返回 note_id 和 note_latest，后续可直接引用。")
 async def notepad_note_create(
     title: str,
     content: str,
     category: str = "other",
     priority: str = "medium",
-    tags: Optional[str] = None,
+    tags: str = "",
 ) -> Dict:
-    return await _invoke_tool(create_note, title, content, category, priority, tags)
+    return await _invoke_tool(create_note, title, content, category, priority, _optional_tool_str(tags))
 
 
 @mcp.tool(name="notepad_note_get", description="读取单篇笔记全文。note_id 支持完整ID、标题、note_1 或 note_latest。")
@@ -5696,21 +5703,21 @@ async def notepad_note_get(note_id: str) -> Dict:
 @mcp.tool(name="notepad_note_update", description="更新笔记标题、内容、分类、优先级或标签。note_id 支持 note_1/note_latest。")
 async def notepad_note_update(
     note_id: str,
-    title: Optional[str] = None,
-    content: Optional[str] = None,
-    category: Optional[str] = None,
-    priority: Optional[str] = None,
-    tags: Optional[str] = None,
+    title: str = "",
+    content: str = "",
+    category: str = "",
+    priority: str = "",
+    tags: str = "",
     enable_auto_segment_on_update: bool = False,
 ) -> Dict:
     return await _invoke_tool(
         update_note,
         note_id,
-        title,
-        content,
-        category,
-        priority,
-        tags,
+        _optional_tool_str(title),
+        _optional_tool_str(content),
+        _optional_tool_str(category),
+        _optional_tool_str(priority),
+        _optional_tool_str(tags),
         enable_auto_segment_on_update,
     )
 
@@ -5728,20 +5735,26 @@ async def notepad_note_append(note_id: str, content: str) -> Dict:
 @mcp.tool(name="notepad_note_list", description="列出最近笔记。返回 note_1、note_2 等别名，便于继续读取或更新。")
 async def notepad_note_list(
     limit: int = 20,
-    category: Optional[str] = None,
+    category: str = "",
     include_content_preview: bool = True,
 ) -> Dict:
-    return await _invoke_tool(list_recent_notes, limit, category, include_content_preview)
+    return await _invoke_tool(list_recent_notes, limit, _optional_tool_str(category), include_content_preview)
 
 
 @mcp.tool(name="notepad_note_search", description="按关键词搜索笔记。返回 note_1、note_2 等别名，便于继续操作。")
 async def notepad_note_search(
     query: str,
-    category: Optional[str] = None,
-    priority: Optional[str] = None,
-    tags: Optional[str] = None,
+    category: str = "",
+    priority: str = "",
+    tags: str = "",
 ) -> Dict:
-    return await _invoke_tool(search_notes, query, category, priority, tags)
+    return await _invoke_tool(
+        search_notes,
+        query,
+        _optional_tool_str(category),
+        _optional_tool_str(priority),
+        _optional_tool_str(tags),
+    )
 
 
 @mcp.tool(name="notepad_note_tags_get", description="查看一篇笔记的标签。note_id 支持 note_1/note_latest。")
@@ -5774,18 +5787,18 @@ async def notepad_email_send(
     to: str,
     subject: str,
     body: str,
-    cc: Optional[str] = None,
+    cc: str = "",
 ) -> Dict:
-    return await _invoke_tool(send_email_simple, to, subject, body, cc)
+    return await _invoke_tool(send_email_simple, to, subject, body, _optional_tool_str(cc))
 
 
 @mcp.tool(name="notepad_email_list", description="列出最近邮件。返回 email_1、email_2 等别名，便于继续读取或回复。")
 async def notepad_email_list(
     max_results: int = 10,
     label: str = "inbox",
-    query: Optional[str] = None,
+    query: str = "",
 ) -> Dict:
-    return await _invoke_tool(get_recent_emails, max_results, label, query)
+    return await _invoke_tool(get_recent_emails, max_results, label, _optional_tool_str(query))
 
 
 @mcp.tool(name="notepad_email_read", description="读取邮件正文。email_id 支持 email_1、email_2 等最近邮件别名。")
@@ -5807,68 +5820,88 @@ async def notepad_email_trash(email_id: str) -> Dict:
 async def notepad_email_reply(
     email_id: str,
     body: str,
-    html_body: Optional[str] = None,
-    cc: Optional[str] = None,
+    html_body: str = "",
+    cc: str = "",
 ) -> Dict:
-    return await _invoke_tool(reply_to_email, email_id, body, html_body, cc)
+    return await _invoke_tool(
+        reply_to_email,
+        email_id,
+        body,
+        _optional_tool_str(html_body),
+        _optional_tool_str(cc),
+    )
 
 
 @mcp.tool(name="notepad_email_reply_all", description="回复邮件的所有收件人。email_id 支持 email_1 等别名。")
 async def notepad_email_reply_all(
     email_id: str,
     body: str,
-    html_body: Optional[str] = None,
+    html_body: str = "",
 ) -> Dict:
-    return await _invoke_tool(reply_all_to_email, email_id, body, html_body)
+    return await _invoke_tool(reply_all_to_email, email_id, body, _optional_tool_str(html_body))
 
 
 @mcp.tool(name="notepad_note_email_attachment", description="把一篇笔记作为 txt 附件发送到邮箱。")
 async def notepad_note_email_attachment(
     note_id: str,
     to: str,
-    subject: Optional[str] = None,
-    body: Optional[str] = None,
-    cc: Optional[str] = None,
+    subject: str = "",
+    body: str = "",
+    cc: str = "",
 ) -> Dict:
-    return await _invoke_tool(send_note_as_email_attachment, note_id, to, subject, body, cc)
+    return await _invoke_tool(
+        send_note_as_email_attachment,
+        note_id,
+        to,
+        _optional_tool_str(subject),
+        _optional_tool_str(body),
+        _optional_tool_str(cc),
+    )
 
 
 @mcp.tool(name="notepad_note_email_html", description="把一篇笔记作为 HTML 邮件正文发送。")
 async def notepad_note_email_html(
     note_id: str,
     to: str,
-    subject: Optional[str] = None,
-    cc: Optional[str] = None,
+    subject: str = "",
+    cc: str = "",
     include_summary: bool = True,
 ) -> Dict:
-    return await _invoke_tool(send_note_as_html_email, note_id, to, subject, cc, include_summary)
+    return await _invoke_tool(
+        send_note_as_html_email,
+        note_id,
+        to,
+        _optional_tool_str(subject),
+        _optional_tool_str(cc),
+        include_summary,
+    )
 
 
 @mcp.tool(name="notepad_note_update_and_email", description="先更新笔记，再把更新后的笔记发送邮件。")
 async def notepad_note_update_and_email(
     note_id: str,
-    title: Optional[str] = None,
-    content: Optional[str] = None,
-    category: Optional[str] = None,
-    priority: Optional[str] = None,
-    tags: Optional[str] = None,
-    to: Optional[str] = None,
-    subject: Optional[str] = None,
+    title: str = "",
+    content: str = "",
+    category: str = "",
+    priority: str = "",
+    tags: str = "",
+    to: str = "",
+    subject: str = "",
     send_type: str = "attachment",
-    cc: Optional[str] = None,
+    cc: str = "",
 ) -> Dict:
     return await _invoke_tool(
         update_note_and_email,
         note_id,
-        title,
-        content,
-        category,
-        priority,
-        tags,
-        to,
-        subject,
+        _optional_tool_str(title),
+        _optional_tool_str(content),
+        _optional_tool_str(category),
+        _optional_tool_str(priority),
+        _optional_tool_str(tags),
+        _optional_tool_str(to),
+        _optional_tool_str(subject),
         send_type,
-        cc,
+        _optional_tool_str(cc),
     )
 
 
@@ -5876,54 +5909,90 @@ async def notepad_note_update_and_email(
 async def notepad_search_save(
     title: str,
     content: str,
-    category: Optional[str] = None,
-    tags: Optional[str] = None,
-    send_email: Optional[str] = None,
+    category: str = "",
+    tags: str = "",
+    send_email: str = "",
+    to: str = "",
+    email: str = "",
+    recipient: str = "",
+    send_to: str = "",
+    type: str = "",
 ) -> Dict:
-    return await _invoke_tool(save_search_results_to_notepad, title, content, category, tags, send_email)
+    if not send_email:
+        for alias_name, alias_val in (
+            ("to", to), ("email", email), ("recipient", recipient), ("send_to", send_to)
+        ):
+            if isinstance(alias_val, str) and "@" in alias_val:
+                logger.warning(
+                    f"[notepad_search_save] client used alias '{alias_name}' for send_email; mapped value={alias_val!r}"
+                )
+                send_email = alias_val
+                break
+    if type:
+        logger.warning(f"[notepad_search_save] ignoring unsupported arg type={type!r}")
+    return await _invoke_tool(
+        save_search_results_to_notepad,
+        title,
+        content,
+        _optional_tool_str(category),
+        _optional_tool_str(tags),
+        _optional_tool_str(send_email),
+    )
 
 
 @mcp.tool(name="notepad_file_list", description="列出已保存文件的元数据，不返回文件正文。")
 async def notepad_file_list(
     limit: int = 20,
-    file_type: Optional[str] = None,
-    name_contains: Optional[str] = None,
+    file_type: str = "",
+    name_contains: str = "",
 ) -> Dict:
-    return await _invoke_tool(list_files, limit, file_type, name_contains)
+    return await _invoke_tool(
+        list_files,
+        limit,
+        _optional_tool_str(file_type),
+        _optional_tool_str(name_contains),
+    )
 
 
 @mcp.tool(name="notepad_file_email_attachment", description="把已保存文件作为邮件附件发送。")
 async def notepad_file_email_attachment(
     file_id: str,
     to: str,
-    subject: Optional[str] = None,
-    body: Optional[str] = None,
-    cc: Optional[str] = None,
+    subject: str = "",
+    body: str = "",
+    cc: str = "",
 ) -> Dict:
-    return await _invoke_tool(send_file_as_email_attachment, file_id, to, subject, body, cc)
+    return await _invoke_tool(
+        send_file_as_email_attachment,
+        file_id,
+        to,
+        _optional_tool_str(subject),
+        _optional_tool_str(body),
+        _optional_tool_str(cc),
+    )
 
 
 @mcp.tool(name="notepad_reminder_create", description="创建邮件提醒。必须在当前对话中向用户确认收件邮箱；不要因为提示词里有默认邮箱就自动代填。未确认时先询问“提醒邮件发送到哪个邮箱？”。如果用户在当前对话里明确说出邮箱，可视为已确认，传 email_to 并将 email_confirmed 设为 true。remind_at 建议使用 ISO 时间字符串。")
 async def notepad_reminder_create(
     title: str,
     remind_at: str,
-    email_to: Optional[str] = None,
+    email_to: str = "",
     email_confirmed: bool = False,
-    content: Optional[str] = None,
-    reminder_type: Optional[str] = None,
-    priority: Optional[str] = None,
-    notify_methods: Optional[str] = None,
+    content: str = "",
+    reminder_type: str = "",
+    priority: str = "",
+    notify_methods: str = "",
 ) -> Dict:
     return await _invoke_tool(
         content_manager,
         action="create_reminder",
         title=title,
-        content=content,
+        content=_optional_tool_str(content),
         remind_at=remind_at,
-        reminder_type=reminder_type,
-        priority=priority,
-        notify_methods=notify_methods,
-        email_to=email_to,
+        reminder_type=_optional_tool_str(reminder_type),
+        priority=_optional_tool_str(priority),
+        notify_methods=_optional_tool_str(notify_methods),
+        email_to=_optional_tool_str(email_to),
         email_confirmed=email_confirmed,
     )
 
@@ -5931,10 +6000,15 @@ async def notepad_reminder_create(
 @mcp.tool(name="notepad_reminder_list", description="列出提醒，可按状态和开始时间过滤。")
 async def notepad_reminder_list(
     limit: int = 50,
-    status: Optional[str] = None,
-    start_from: Optional[str] = None,
+    status: str = "",
+    start_from: str = "",
 ) -> Dict:
-    return await _invoke_tool(list_reminders, limit, status, start_from)
+    return await _invoke_tool(
+        list_reminders,
+        limit,
+        _optional_tool_str(status),
+        _optional_tool_str(start_from),
+    )
 
 
 @mcp.tool(name="notepad_reminder_get", description="读取单个提醒详情。")
@@ -5945,26 +6019,26 @@ async def notepad_reminder_get(reminder_id: str) -> Dict:
 @mcp.tool(name="notepad_reminder_update", description="更新提醒标题、内容、时间、优先级或收件邮箱。更新 email_to 前必须向用户确认，并传 email_confirmed=true。")
 async def notepad_reminder_update(
     reminder_id: str,
-    title: Optional[str] = None,
-    remind_at: Optional[str] = None,
-    email_to: Optional[str] = None,
+    title: str = "",
+    remind_at: str = "",
+    email_to: str = "",
     email_confirmed: bool = False,
-    content: Optional[str] = None,
-    reminder_type: Optional[str] = None,
-    priority: Optional[str] = None,
-    notify_methods: Optional[str] = None,
+    content: str = "",
+    reminder_type: str = "",
+    priority: str = "",
+    notify_methods: str = "",
 ) -> Dict:
     return await _invoke_tool(
         content_manager,
         action="update_reminder",
         reminder_id=reminder_id,
-        title=title,
-        content=content,
-        remind_at=remind_at,
-        reminder_type=reminder_type,
-        priority=priority,
-        notify_methods=notify_methods,
-        email_to=email_to,
+        title=_optional_tool_str(title),
+        content=_optional_tool_str(content),
+        remind_at=_optional_tool_str(remind_at),
+        reminder_type=_optional_tool_str(reminder_type),
+        priority=_optional_tool_str(priority),
+        notify_methods=_optional_tool_str(notify_methods),
+        email_to=_optional_tool_str(email_to),
         email_confirmed=email_confirmed,
     )
 

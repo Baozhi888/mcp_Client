@@ -89,15 +89,24 @@ audit_logger = setup_logging('vps_audit', level=logging.INFO)
 mcp = FastMCP("VPSServerMonitor")
 
 # ============ 安全配置 ============
+# 每条规则为 (label, regex)。label 用于审计日志和返回给客户端，便于排查误伤。
 FORBIDDEN_PATTERNS = [
-    r'\brm\s+(-[rf]+|--[a-zA-Z-]+)\s+/\S*',
-    r'\bdd\b.*if=/dev/.*of=/',
-    r'\bmkfs\b', r'\bformat\b', r'\bfdisk\b', r'\bparted\b',
-    r':(){:|:&};:',
-    r'\bchmod\s+777\s+/',
-    r'\biptables\s+-F',
-    r'\bkillall\s+-9',
-    r'\binit\s+0', r'\bshutdown\s+.*now', r'\bhalt\b',
+    ("rm_root", r'\brm\s+(-[rf]+|--[a-zA-Z-]+)\s+/\S*'),
+    ("dd_overwrite", r'\bdd\b.*if=/dev/.*of=/'),
+    ("mkfs", r'(?<![\w-])mkfs\b(?!\w)'),
+    # 收紧：只匹配 Windows 风格的磁盘格式化 (format C:)，避免误伤 docker --format 等长选项
+    ("format_disk", r'(?<![\w-])format\s+[a-zA-Z]:'),
+    ("fdisk", r'(?<![\w-])fdisk\b(?!\w)'),
+    ("parted", r'(?<![\w-])parted\b(?!\w)'),
+    ("fork_bomb", r':\(\)\{\s*:\s*\|\s*:&\s*\};:'),
+    ("chmod_777_root", r'\bchmod\s+777\s+/'),
+    ("iptables_flush", r'\biptables\s+-F\b'),
+    ("killall_9", r'\bkillall\s+-9\b'),
+    ("init_0", r'\binit\s+0\b'),
+    # 收紧：只拦截真正的 shutdown 命令（开头或分号后），避免误伤 grep/log 文本里的 shutdown 字眼
+    ("shutdown_now", r'(?:^|[;&|]\s*)shutdown\s+(?:-[hHrR]\s+)?(?:now|\+?\d)'),
+    # 收紧：halt 必须独立成令，不允许 --halt 长选项或路径子串
+    ("halt", r'(?:^|[;&|]\s*)halt(?:\s+-[fpn]+)?\s*$'),
 ]
 
 SAFE_OPERATIONS = [
@@ -124,8 +133,15 @@ def audit_log(context: str, action: str, status: str, details: str = ""):
         message += f" - {details}"
     audit_logger.info(message)
 
+def match_dangerous_rule(command: str) -> Optional[str]:
+    """返回首个命中的规则标签，未命中返回 None。"""
+    for label, pattern in FORBIDDEN_PATTERNS:
+        if re.search(pattern, command, re.IGNORECASE):
+            return label
+    return None
+
 def is_dangerous_command(command: str) -> bool:
-    return any(re.search(p, command, re.IGNORECASE) for p in FORBIDDEN_PATTERNS)
+    return match_dangerous_rule(command) is not None
 
 def is_safe_operation(command: str) -> bool:
     return any(re.search(p, command, re.IGNORECASE) for p in SAFE_OPERATIONS)
@@ -157,9 +173,15 @@ def limit_output(value: Optional[str]) -> str:
 def execute_command(command: str, context: str = "exec") -> Dict[str, Any]:
     """安全执行命令的核心函数"""
     # 安全检查
-    if is_dangerous_command(command):
-        audit_log(context, "execute", "blocked", f"Dangerous: {command}")
-        return {"success": False, "code": -3, "error": "Dangerous command blocked"}
+    matched_rule = match_dangerous_rule(command)
+    if matched_rule:
+        audit_log(context, "execute", "blocked", f"Dangerous[{matched_rule}]: {command}")
+        return {
+            "success": False, "code": -3,
+            "error": f"Dangerous command blocked (rule: {matched_rule})",
+            "blocked_rule": matched_rule,
+            "command_preview": command[:200],
+        }
 
     can_proceed, msg = check_system_resources()
     if not can_proceed:

@@ -169,13 +169,14 @@ def vps_package_manage(server_name: str, package_name: str, action: str, async_m
 
 
 @mcp.tool()
-def vps_docker_manage(server_name: str, action: str, container: str = None) -> Dict[str, Any]:
+def vps_docker_manage(server_name: str, action: str, container: str = None, since: str = None) -> Dict[str, Any]:
     """
     管理Docker容器
-    Args: server_name, action - list|start|stop|restart|logs|stats, container - 容器名
+    Args: server_name, action - list|start|stop|restart|logs|stats|inspect, container - 容器名,
+          since - logs 时间过滤（如 10m|1h|2026-05-26T10:00:00），仅 action=logs 时生效
     """
     context = f"docker_{action}_{server_name}"
-    valid = ["list", "start", "stop", "restart", "logs", "stats"]
+    valid = ["list", "start", "stop", "restart", "logs", "stats", "inspect"]
 
     if action not in valid:
         return build_response(False, error=f"Invalid action. Use: {valid}", code=6001)
@@ -191,7 +192,20 @@ def vps_docker_manage(server_name: str, action: str, container: str = None) -> D
             return build_response(False, error="Container name required for logs", code=6002)
         if not _safe_container_name(container):
             return build_response(False, error=f"Invalid container name: {container}", code=6004)
-        cmd = f"sudo docker logs --tail 100 {shlex.quote(container)}"
+        since_part = ""
+        if since:
+            # 接受相对时长 (10m/1h/2d) 或 ISO 时间戳，避免注入
+            if re.match(r"^\d+[smhd]$", since) or re.match(r"^[\d:\-T+ ]+$", since):
+                since_part = f" --since {shlex.quote(since)}"
+            else:
+                return build_response(False, error=f"Invalid since format: {since}", code=6005)
+        cmd = f"sudo docker logs --tail 100{since_part} {shlex.quote(container)}"
+    elif action == "inspect":
+        if not container:
+            return build_response(False, error="Container name required for inspect", code=6002)
+        if not _safe_container_name(container):
+            return build_response(False, error=f"Invalid container name: {container}", code=6004)
+        cmd = f"sudo docker inspect {shlex.quote(container)}"
     else:
         if not container:
             return build_response(False, error=f"Container name required for {action}", code=6002)
@@ -205,7 +219,8 @@ def vps_docker_manage(server_name: str, action: str, container: str = None) -> D
         return build_response(True, server_name=server_name, action=action, container=container,
                              output=result["output"][:3000])
 
-    return build_response(False, error=result.get("error"), code=6003)
+    return build_response(False, error=result.get("error"), code=6003,
+                         blocked_rule=result.get("blocked_rule"))
 
 
 @mcp.tool()

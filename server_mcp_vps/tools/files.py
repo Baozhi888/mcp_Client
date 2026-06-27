@@ -187,23 +187,40 @@ def vps_system_logs(server_name: str, log_type: str = "syslog", lines: int = 100
         "auth": ["/var/log/auth.log", "/var/log/secure"],
         "kern": ["/var/log/kern.log"],
         "nginx": ["/var/log/nginx/error.log", "/var/log/nginx/access.log"],
-        "docker": ["/var/log/docker.log"]
+        "docker": ["/var/log/docker.log"],
     }
 
     if log_type not in log_paths:
         return build_response(False, error=f"Unknown log type. Available: {list(log_paths.keys())}", code=5101)
 
-    # 找到存在的日志文件
+    lines = max(1, min(int(lines), 2000))
+
+    # docker 日志：容器化部署下 journald 通常不可用，直接走 docker logs <container>
+    if log_type == "docker":
+        target = filter_pattern.strip() if filter_pattern else None
+        if not target:
+            return build_response(False, error="docker log type requires filter_pattern as container name", code=5104)
+        if not re.match(r"^[a-zA-Z0-9_.:-]+$", target):
+            return build_response(False, error=f"Invalid container name: {target}", code=5105)
+        cmd = f"sudo docker logs --tail {lines} {shlex.quote(target)} 2>&1"
+        log_file = f"docker:{target}"
+        # filter_pattern 已用作容器名，避免再 grep 自己
+        result = execute_command(cmd, context)
+        if result["success"]:
+            entries = result["output"].splitlines() if result["output"] else []
+            return build_response(True, server_name=server_name, log_type=log_type, log_file=log_file,
+                                 entries=entries, count=len(entries))
+        return build_response(False, error=result.get("error"), code=5103,
+                             blocked_rule=result.get("blocked_rule"))
+
+    # 其他日志走文件 tail
     log_file = None
     for path in log_paths[log_type]:
         if os.path.exists(path):
             log_file = path
             break
-
     if not log_file:
         return build_response(False, error=f"No {log_type} log file found", code=5102)
-
-    lines = max(1, min(int(lines), 2000))
     cmd = f"sudo tail -n {lines} {shlex.quote(log_file)}"
 
     if filter_pattern:
